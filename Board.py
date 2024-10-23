@@ -67,7 +67,7 @@ class Board:
         assert(not any(castling))
         
         self.whiteToMove = FEN[1] == 'w'
-        self.enpassantTarget = int2(8-(ord(FEN[3][0])-97), int(FEN[3][1])) if FEN[3]!='-' else None
+        self.enpassantTarget = int2(int(FEN[3][1])-1, ord(FEN[3][0])-97) if FEN[3]!='-' else None
         self.fiftyMoveRuleCounter = int(FEN[4])
         self.moveCounter = int(FEN[5])
         self.all_moves = {}

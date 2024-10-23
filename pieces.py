@@ -108,7 +108,6 @@ class Pawn(Piece):
                 moves.append(self.pos + self.pattern[1])
         
         mv = self.pos + self.pattern[2]
-        print(self.board.enpassantTarget)
         if (0 <= mv.x <= 7) and (0 <= mv.y <= 7) and (self.board[mv] and self.board[mv].white!=self.white) or self.board.enpassantTarget and mv==self.board.enpassantTarget:
             moves.append(mv)
         
