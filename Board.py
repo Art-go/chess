@@ -1,5 +1,5 @@
 from pieces import Piece, Bishop, King, Knight, Pawn, Queen, Rook
-from Vector2Int import Vector2Int
+from int2 import int2
 
 class Board:
     FEN_notation={'k': King, 'q': Queen, 'r': Rook, 'b': Bishop, 'n': Knight, 'p': Pawn}
@@ -32,7 +32,7 @@ class Board:
                 
                 white = c.isupper()
                 
-                piece = self.FEN_notation[c.lower()](white, Vector2Int(7-ind, file), self)
+                piece = self.FEN_notation[c.lower()](white, int2(7-ind, file), self)
                 pos = (7-ind, file)
                 self.pos[7-ind][file] = piece
                 file+=1
@@ -67,9 +67,11 @@ class Board:
         assert(not any(castling))
         
         self.whiteToMove = FEN[1] == 'w'
-        self.enpassantTarget = Vector2Int(ord(FEN[3][0])-97, int(FEN[3][1])) if FEN[3]!='-' else None
+        self.enpassantTarget = int2(8-(ord(FEN[3][0])-97), int(FEN[3][1])) if FEN[3]!='-' else None
         self.fiftyMoveRuleCounter = int(FEN[4])
         self.moveCounter = int(FEN[5])
+        self.all_moves = {}
+        self.parse_all_moves()
  
     def __str__(self):
         template = "##A=B=C=D=E=F=G=H=##\n" \
@@ -91,7 +93,7 @@ class Board:
 
     def __getitem__(self, index):
         match index:
-            case Vector2Int():
+            case int2():
                 return self.pos[index.x][index.y]
             case int():
                 return self.pos[index]
@@ -102,7 +104,7 @@ class Board:
         if value is not None and not isinstance(value, Piece):
             raise ValueError
         match index:
-            case Vector2Int():
+            case int2():
                 self.pos[index.x][index.y]=value
                 if value:
                     value.pos=index
@@ -135,8 +137,13 @@ class Board:
  
         return move
  
-    def get_all_moves(self):
+    def parse_all_moves(self):
+        self.all_moves = {}
         for rank in self.pos:
             for piece in rank:
                 if piece and piece.white == self.whiteToMove:
-                    ...
+                    for mv in piece.get_all_possible_moves():
+                        if mv.tuple() not in self.all_moves:
+                            self.all_moves[mv.tuple()] = []
+                        self.all_moves[mv.tuple()].append(piece)
+        
