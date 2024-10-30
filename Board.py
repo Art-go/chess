@@ -2,7 +2,7 @@ from pieces import Piece, Bishop, King, Knight, Pawn, Queen, Rook
 from int2 import int2
 
 class Board:
-    FEN_notation={'k': King, 'q': Queen, 'r': Rook, 'b': Bishop, 'n': Knight, 'p': Pawn}
+    PieceIcons={'k': King, 'q': Queen, 'r': Rook, 'b': Bishop, 'n': Knight, 'p': Pawn}
     def __init__(self, FEN: str = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") -> None:
         FEN = FEN.split()
         assert(len(FEN)==6)
@@ -28,11 +28,11 @@ class Board:
                 if c.isdigit():
                     file+=int(c)
                     continue
-                assert(c.lower() in self.FEN_notation)
+                assert(c.lower() in self.PieceIcons)
                 
                 white = c.isupper()
                 
-                piece = self.FEN_notation[c.lower()](white, int2(7-ind, file), self)
+                piece = self.PieceIcons[c.lower()](white, int2(7-ind, file), self)
                 pos = (7-ind, file)
                 self.pos[7-ind][file] = piece
                 file+=1
@@ -95,6 +95,8 @@ class Board:
         match index:
             case int2():
                 return self.pos[index.x][index.y]
+            case tuple():
+                return self.pos[index[0]][index[1]]
             case int():
                 return self.pos[index]
             case _:
@@ -147,3 +149,55 @@ class Board:
                             self.all_moves[mv.tuple()] = []
                         self.all_moves[mv.tuple()].append(piece)
         
+    @staticmethod
+    def parse_pos(pos: str):
+        assert len(pos)==2 and pos[0] in 'abcdefgh' and pos[1] in '12345678'
+        return int2(int(pos[1])-1, ord(pos[0])-97)
+    
+    def move(self, mv: str):
+        assert isinstance(mv, str)
+        assert len(mv)>=4
+
+        start = self.parse_pos(mv[:2])
+        piece: Piece = self[start]
+
+        assert piece is not None
+        assert piece.white == self.whiteToMove
+
+        all_mvs = piece.get_all_possible_moves()
+        target = self.parse_pos(mv[2:4])
+        assert target in all_mvs
+
+        if isinstance(piece, Pawn) and target.x in [0, 7]:
+            assert len(mv)==5
+            piece = self.PieceIcons[mv[4].lower()](white = piece.white, pos = target, board = self)
+        else:
+            assert len(mv)==4
+        if isinstance(piece, King) and target-start in (int2(0, 2), int2(0, -2)):
+            rk = int2(target.x, 0 if target.y==2 else 7)
+            rook = self[rk]
+            self[rk] = None
+            rk_trgt = int2(target.x, 3 if target.y==2 else 5)
+            self[rk_trgt] = rook
+            rook.pos = rk_trgt
+    
+        
+        self[target] = piece
+        piece.pos = target
+        self[start] = None
+        piece.castle = False
+
+        self.whiteToMove = not self.whiteToMove
+        self.parse_all_moves()
+        assert not self.detect_checks()[::-1][int(piece.white)]
+    
+    def detect_checks(self):
+        white = False
+        black = False
+        for mv, mvs in self.all_moves.items():
+            if self[mv] and isinstance(self[mv], King) and mvs:
+                if self[mv].white:
+                    white = True
+                else:
+                    black = True
+        return white, black

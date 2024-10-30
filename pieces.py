@@ -95,7 +95,7 @@ class Pawn(Piece):
         self.start = 1
         self.promotion = 7
         if not self.white:
-            self.pattern = (i*-1 for i in self.pattern)
+            self.pattern = [i*-1 for i in self.pattern]
             self.start = 6
             self.promotion = 0
 
